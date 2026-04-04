@@ -1,7 +1,9 @@
 // 1) require de express solicita a conexion de conexion.js
+require("dotenv").config();
 const { conexion } = require('./database/conexion');
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 // 2) verificar que conecto
 console.log("App node arrancada");
@@ -27,8 +29,12 @@ app.listen(puerto, () => { //COLBACK que se ejecuta cuando el servidor está cor
 });
 
 
-//RUTAS POSTA
+//RUTAS
 const rutas_articulo = require("./routers/ArticuloRouter"); //colocamos en una constante el archivo de rutas
+
+// CARPETA PUBLICA para servir imágenes estáticas
+// Esto permite acceder a los archivos de /uploads desde el navegador
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 //cargar las rutas
 app.use("/api", rutas_articulo);

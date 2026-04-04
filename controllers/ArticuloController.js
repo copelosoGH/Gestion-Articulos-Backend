@@ -1,21 +1,61 @@
 const validator = require("validator");
 const Articulo = require("../models/Articulo");
+const fs = require("fs");
+const path = require("path");
 
-const prueba = (req, res) => {
+const listarArticulos = async (req, res) => {
+    try {
+        const articulos = await Articulo.find({}); // ordenados del más nuevo al más viejo
+ 
+        if (!articulos || articulos.length === 0) {
+            return res.status(404).json({
+                status: "error",
+                mensaje: "No hay articulos"
+            });
+        }
+ 
+        return res.status(200).json({
+            status: "success",
+            cantidad: articulos.length,
+            articulos
+        });
+ 
+    } catch (error) {
+        return res.status(500).json({
+            status: "error",
+            mensaje: "Error al listar articulos"
+        });
+    }
+};
+ 
+// OBTENER UNO POR ID
+const obtenerArticulo = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const articulo = await Articulo.findById(id);
+ 
+        if (!articulo) {
+            return res.status(404).json({
+                status: "error",
+                mensaje: "No existe el articulo"
+            });
+        }
+ 
+        return res.status(200).json({
+            status: "success",
+            articulo
+        });
+ 
+    } catch (error) {
+        // Si el ID no tiene formato válido de MongoDB, Mongoose lanza CastError
+        return res.status(400).json({
+            status: "error",
+            mensaje: "ID no válido"
+        });
+    }
+};
 
-    return res.status(200).json({
-        mensaje: "metodo prueba artiulo controller"
-    });
-}
-
-const hola = (req, res) => {
-
-    return res.status(200).json({
-        mensaje: "estas haciendo tu ruta sin mirar el curso, bien"
-    });
-}
-
-const crear = async (req, res) => {
+const crearArticulo = async (req, res) => {
 
     // TOMAR PARAMETROS DEL POST
     let parametros = req.body;
@@ -63,8 +103,155 @@ const crear = async (req, res) => {
     }
 };
 
+// ACTUALIZAR
+const actualizarArticulo = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const parametros = req.body;
+ 
+        // Validar que haya al menos un campo para actualizar
+        if (!parametros || Object.keys(parametros).length === 0) {
+            return res.status(400).json({
+                status: "error",
+                mensaje: "No se enviaron datos para actualizar"
+            });
+        }
+ 
+        // findByIdAndUpdate: busca por ID, aplica los cambios, y devuelve el documento ACTUALIZADO
+        // { new: true } hace que devuelva el documento nuevo, no el viejo
+        // runValidators: true hace que respete las validaciones del Schema al actualizar
+        const articuloActualizado = await Articulo.findByIdAndUpdate(
+            id,
+            parametros,
+            { new: true, runValidators: true }
+        );
+ 
+        if (!articuloActualizado) {
+            return res.status(404).json({
+                status: "error",
+                mensaje: "No existe el articulo"
+            });
+        }
+ 
+        return res.status(200).json({
+            status: "success",
+            articulo: articuloActualizado,
+            mensaje: "Articulo actualizado correctamente"
+        });
+ 
+    } catch (error) {
+        return res.status(400).json({
+            status: "error",
+            mensaje: "Error al actualizar. Verificá el ID y los datos enviados"
+        });
+    }
+};
+ 
+// ELIMINAR
+const eliminarArticulo = async (req, res) => {
+    try {
+        const id = req.params.id;
+ 
+        const articuloEliminado = await Articulo.findByIdAndDelete(id);
+ 
+        if (!articuloEliminado) {
+            return res.status(404).json({
+                status: "error",
+                mensaje: "No existe el articulo"
+            });
+        }
+ 
+        return res.status(200).json({
+            status: "success",
+            articulo: articuloEliminado,
+            mensaje: "Articulo eliminado correctamente"
+        });
+ 
+    } catch (error) {
+        return res.status(400).json({
+            status: "error",
+            mensaje: "Error al eliminar. Verificá el ID"
+        });
+    }
+};
+ 
+// SUBIR IMAGEN
+const subirImagen = async (req, res) => {
+    try {
+        // Verificar que se subió un archivo
+        if (!req.file) {
+            return res.status(400).json({
+                status: "error",
+                mensaje: "No se subió ninguna imagen"
+            });
+        }
+ 
+        // Verificar extensión permitida
+        const extension = req.file.originalname.split(".").pop().toLowerCase();
+        const extensionesPermitidas = ["png", "jpg", "jpeg", "gif", "webp"];
+ 
+        if (!extensionesPermitidas.includes(extension)) {
+            // Borrar el archivo que subió multer si la extensión no es válida
+            fs.unlinkSync(req.file.path);
+            return res.status(400).json({
+                status: "error",
+                mensaje: "Extensión no permitida. Usá png, jpg, jpeg, gif o webp"
+            });
+        }
+ 
+        // Actualizar el campo img del artículo
+        const id = req.params.id;
+        const articuloActualizado = await Articulo.findByIdAndUpdate(
+            id,
+            { img: req.file.filename },
+            { new: true }
+        );
+ 
+        if (!articuloActualizado) {
+            fs.unlinkSync(req.file.path);
+            return res.status(404).json({
+                status: "error",
+                mensaje: "No existe el artículo"
+            });
+        }
+ 
+        return res.status(200).json({
+            status: "success",
+            articulo: articuloActualizado,
+            mensaje: "Imagen subida correctamente",
+            fichero: req.file.filename
+        });
+ 
+    } catch (error) {
+        return res.status(500).json({
+            status: "error",
+            mensaje: "Error al subir la imagen"
+        });
+    }
+};
+ 
+// OBTENER IMAGEN
+const obtenerImagen = (req, res) => {
+    const fichero = req.params.fichero;
+    const rutaFisica = path.resolve("./uploads/articulos/" + fichero);
+ 
+    fs.access(rutaFisica, fs.constants.F_OK, (error) => {
+        if (error) {
+            return res.status(404).json({
+                status: "error",
+                mensaje: "La imagen no existe"
+            });
+        }
+        return res.sendFile(rutaFisica);
+    });
+};
+
 module.exports = {
-    prueba,
-    hola,
-    crear
-}
+    crearArticulo,
+    listarArticulos,
+    obtenerArticulo,
+    actualizarArticulo,
+    eliminarArticulo,
+    subirImagen,
+    obtenerImagen
+};
