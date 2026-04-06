@@ -40,6 +40,6 @@ app.use("/api", rutas_usuario);
 
 
 // SERVIDOR Y PETICIONES HTTP
-app.listen(puerto, "0.0.0.0", () => { //COLBACK que se ejecuta cuando el servidor está corriendo, en este caso para mostrar un mensaje en la consola
+app.listen(puerto, () => { //COLBACK que se ejecuta cuando el servidor está corriendo, en este caso para mostrar un mensaje en la consola
     console.log(`Servidor corriendo en el puerto ${puerto}`);
 });
