@@ -22,6 +22,10 @@ app.use(cors()); // app.use permite configurar middlewares, en este caso cors
 app.use(express.json()); // app.use permite configurar middlewares, en este caso express.json() para convertir el body a un objeto JS
 app.use(express.urlencoded({extended:true})); // asi express recibe los datos en urlencode y los parsea a json
 
+app.get("/", (req, res) => {
+    return res.status(200).send("<h1>Backend de Gestión de Artículos Online</h1>");
+});
+
 // CARPETA PUBLICA para servir imágenes estáticas
 // Esto permite acceder a los archivos de /uploads desde el navegador
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
