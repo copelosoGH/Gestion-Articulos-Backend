@@ -3,6 +3,7 @@ const router = express.Router(); // asignamos a una constante el medoto de route
 const multer = require("multer");
 
 const ArticuloController = require("../controllers/ArticuloController");
+const autenticacion = require("../middlewares/autenticacion");
 
 // CONFIGURACION DE MULTER (manejo de subida de archivos)
 const storage = multer.diskStorage({
@@ -21,15 +22,15 @@ const storage = multer.diskStorage({
  
 const upload = multer({ storage });
 
-// CRUD
+// RUTAS PROTEGIDAS
+router.post("/articulo", autenticacion, ArticuloController.crearArticulo);
+router.put("/articulo/:id", autenticacion, ArticuloController.actualizarArticulo);
+router.delete("/articulo/:id", autenticacion, ArticuloController.eliminarArticulo);
+router.post("/articulo/imagen/:id", upload.single("file0"), autenticacion, ArticuloController.subirImagen);
+
+// RUTAS PUBLICAS
 router.get("/articulos", ArticuloController.listarArticulos);
 router.get("/articulo/:id", ArticuloController.obtenerArticulo);
-router.post("/articulo", ArticuloController.crearArticulo);
-router.put("/articulo/:id",ArticuloController.actualizarArticulo);
-router.delete("/articulo/:id", ArticuloController.eliminarArticulo);
-
-// IMAGEN
-router.post("/articulo/imagen/:id", upload.single("file0"), ArticuloController.subirImagen);
 router.get("/articulo/imagen/:fichero", ArticuloController.obtenerImagen);
 
 module.exports = router;

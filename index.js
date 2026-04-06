@@ -11,10 +11,9 @@ console.log("App node arrancada");
 // 3) ejecutar la conexion a la base de datos (asi de simple)
 conexion();
 
-
 // SERVIDOR NODE (se almacena en una variable la ejecución de express)
 const app = express();
-const puerto = 3900;
+const puerto = process.env.PORT || 3900;
 
 // CONFIGURAR CORS
 app.use(cors()); // app.use permite configurar middlewares, en este caso cors
@@ -30,7 +29,8 @@ app.listen(puerto, () => { //COLBACK que se ejecuta cuando el servidor está cor
 
 
 //RUTAS
-const rutas_articulo = require("./routers/ArticuloRouter"); //colocamos en una constante el archivo de rutas
+const rutas_articulo = require("./routers/ArticuloRouter");
+const rutas_usuario  = require("./routers/UsuarioRouter");
 
 // CARPETA PUBLICA para servir imágenes estáticas
 // Esto permite acceder a los archivos de /uploads desde el navegador
@@ -38,3 +38,4 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 //cargar las rutas
 app.use("/api", rutas_articulo);
+app.use("/api", rutas_usuario);
