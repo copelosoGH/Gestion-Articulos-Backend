@@ -113,11 +113,12 @@ const login = async (req, res) => {
         const token = jwt.sign(
             {
                 id: usuario._id,
+                nombre: usuario.nombre,
                 email: usuario.email,
                 rol: usuario.rol
             },
             process.env.JWT_SECRET,
-            { expiresIn: "7d" }  // dura 7 días
+            { expiresIn: "2d" }
         );
 
         // No devolver la contraseña
