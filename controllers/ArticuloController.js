@@ -2,6 +2,7 @@ const validator = require("validator");
 const Articulo = require("../models/Articulo");
 const fs = require("fs");
 const path = require("path");
+const cloudinary = require("../services/cloudinary");
 
 const listarArticulos = async (req, res) => {
     try {
@@ -178,73 +179,43 @@ const eliminarArticulo = async (req, res) => {
 // SUBIR IMAGEN
 const subirImagen = async (req, res) => {
     try {
-        // Verificar que se subió un archivo
         if (!req.file) {
-            return res.status(400).json({
-                status: "error",
-                mensaje: "No se subió ninguna imagen"
-            });
+            return res.status(400).json({ status: "error", mensaje: "No se subió ninguna imagen" });
         }
- 
-        // Verificar extensión permitida
-        const extension = req.file.originalname.split(".").pop().toLowerCase();
-        const extensionesPermitidas = ["png", "jpg", "jpeg", "gif", "webp"];
- 
-        if (!extensionesPermitidas.includes(extension)) {
-            // Borrar el archivo que subió multer si la extensión no es válida
-            fs.unlinkSync(req.file.path);
-            return res.status(400).json({
-                status: "error",
-                mensaje: "Extensión no permitida. Usá png, jpg, jpeg, gif o webp"
-            });
-        }
- 
-        // Actualizar el campo img del artículo
+
+        // 1. Subir a Cloudinary (especificando la carpeta que ya creaste)
+        const resultado = await cloudinary.uploader.upload(req.file.path, {
+            folder: "gestion-articulos"
+        });
+
+        // 2. Eliminar el archivo temporal que multer dejó en /uploads
+        // Esto es importante para no llenar el disco de Railway innecesariamente
+        fs.unlinkSync(req.file.path);
+
+        // 3. Actualizar el artículo con la URL segura que nos da Cloudinary
         const id = req.params.id;
         const articuloActualizado = await Articulo.findByIdAndUpdate(
             id,
-            { img: req.file.filename },
+            { img: resultado.secure_url },
             { new: true }
         );
- 
+
         if (!articuloActualizado) {
-            fs.unlinkSync(req.file.path);
-            return res.status(404).json({
-                status: "error",
-                mensaje: "No existe el artículo"
-            });
+            return res.status(404).json({ status: "error", mensaje: "No existe el artículo" });
         }
- 
+
         return res.status(200).json({
             status: "success",
             articulo: articuloActualizado,
-            mensaje: "Imagen subida correctamente",
-            fichero: req.file.filename
+            mensaje: "Imagen subida a la nube correctamente"
         });
- 
+
     } catch (error) {
-        return res.status(500).json({
-            status: "error",
-            mensaje: "Error al subir la imagen"
-        });
+        console.error(error);
+        return res.status(500).json({ status: "error", mensaje: "Error al subir a Cloudinary" });
     }
 };
- 
-// OBTENER IMAGEN
-const obtenerImagen = (req, res) => {
-    const fichero = req.params.fichero;
-    const rutaFisica = path.resolve("./uploads/articulos/" + fichero);
- 
-    fs.access(rutaFisica, fs.constants.F_OK, (error) => {
-        if (error) {
-            return res.status(404).json({
-                status: "error",
-                mensaje: "La imagen no existe"
-            });
-        }
-        return res.sendFile(rutaFisica);
-    });
-};
+
 
 module.exports = {
     crearArticulo,
@@ -252,6 +223,5 @@ module.exports = {
     obtenerArticulo,
     actualizarArticulo,
     eliminarArticulo,
-    subirImagen,
-    obtenerImagen
+    subirImagen
 };

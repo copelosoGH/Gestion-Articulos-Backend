@@ -31,6 +31,5 @@ router.post("/articulo/imagen/:id", upload.single("file0"), autenticacion, Artic
 // RUTAS PUBLICAS
 router.get("/articulos", ArticuloController.listarArticulos);
 router.get("/articulo/:id", ArticuloController.obtenerArticulo);
-router.get("/articulo/imagen/:fichero", ArticuloController.obtenerImagen);
 
 module.exports = router;
